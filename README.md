@@ -33,13 +33,13 @@ Example Response:
  ### Features
  
 
- - [ ] Create a route with a method of `get` and a path of `/location`. The route callback should invoke a function to convert the search query to a latitude and longitude. The function should use the provided JSON data.
+ - [x] Create a route with a method of `get` and a path of `/location`. The route callback should invoke a function to convert the search query to a latitude and longitude. The function should use the provided JSON data.
  
- - [ ] A constructor function will ensure that each object is created
+ - [x] A constructor function will ensure that each object is created
        according to the same format when your server receives the
        external data. Ensure your code base uses a constructor function
        for this resource.
- - [ ] Return an object which contains the necessary information for
+ - [x] Return an object which contains the necessary information for
        correct client rendering. See the sample response.
  - [ ] Deploy your updated express server to Heroku.
  - [ ] Confirm that your route is responding as expected by entering
