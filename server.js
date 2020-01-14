@@ -15,14 +15,14 @@ app.use(cors());
 app.get('/location', (request, response) => {
   try {
     let city = request.query.city;
-    const geoData = require('.data/geo.json');
+    const geoData = require('./data/geo.json');
     let geoDataResults  = geoData[0];
-    let location = new Location(city, locationData);
+    let locations = new Location(city, geoDataResults);
     // search_query: city,
     // formatted_query: geoData[0].display_name,
     // latitude: geoData[0].lat,
     // longitude: geoData[0].lon
-    response.status(200).send(location);
+    response.status(200).send(locations);
   }
 
   catch(error) {
@@ -34,7 +34,7 @@ function Location(city, locationData) {
   this.search_query = city;
   this.formatted_query = locationData.display_name;
   this.latitude = locationData.lat;
-  this.longitude = location.lon;
+  this.longitude = locationData.lon;
 }
 
 function errorHandler(string,response){
