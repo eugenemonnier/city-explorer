@@ -10,8 +10,11 @@ The *City Explorer* project is a project to develop a backend server for a websi
 ## Getting Started
 ### Documentation
 [Node JS Docs](https://nodejs.org/en/)
+
 [NPM JS Docs](https://docs.npmjs.com/)
+
 [Express JS Docs](http://expressjs.com/en/4x/api.html)
+
 [Dotenv Docs](https://www.npmjs.com/package/dotenv)
 
 ## Architecture
