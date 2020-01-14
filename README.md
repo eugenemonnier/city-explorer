@@ -17,11 +17,23 @@ The *City Explorer* project is a project to develop a backend server for a websi
 
 [Dotenv Docs](https://www.npmjs.com/package/dotenv)
 
+### Configuration
+ - `data` directory - with `geo.json` and `darksky.json`.
+ - `.env` - with your PORT. Make sure this file is in your `.gitignore`.
+ - `.gitignore` - with standard NodeJS configurations.
+ - `.eslintrc.json` - with Code 301 course standards for the linter
+ - `package.json` - with all dependencies and any associated details related to configuration. Dependencies required: 
+     - express
+     - cors
+     - dotenv
+    - Note that the `package-lock.json` file is automatically created when dependencies are installed and ensures that future installations of the project use the same versions of the dependencies.
+
 ## Architecture
 This backend utilizes the JavaScript language including the following libraries:
  - Node JS
  - Express JS
  - Dotenv
+ - cors
 
 ## Change Log
 <!-- Use this area to document the iterative changes made to your application as each feature is successfully implemented. Use time stamps. Here's an examples: -->
