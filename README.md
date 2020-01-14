@@ -1,9 +1,33 @@
 
 # City Explorer
 
-  
+**Author**: Eugene Monnier
+**Version**: 1.0.0 
 
-A project to develop a backend server for a website that allows a user to request weather and event information by city.
+## Overview
+The *City Explorer* project is a project to develop a backend server for a website that allows a user to request weather and event information by city.
+
+## Getting Started
+### Documentation
+[Node JS Docs](https://nodejs.org/en/)
+[NPM JS Docs](https://docs.npmjs.com/)
+[Express JS Docs](http://expressjs.com/en/4x/api.html)
+[Dotenv Docs](https://www.npmjs.com/package/dotenv)
+
+## Architecture
+This backend utilizes the JavaScript language including the following libraries:
+ - Node JS
+ - Express JS
+ - Dotenv
+
+## Change Log
+<!-- Use this area to document the iterative changes made to your application as each feature is successfully implemented. Use time stamps. Here's an examples: -->
+
+01-14-2020 11:30 - Application now has a fully-functional express server, with a GET route for the location resource. Returns location data for Lynwood for any search request.
+
+## Credits and Collaborations
+<!-- <Give credit (and a link) to other people or resources that helped you build this application. -->
+Ken Dickey
  
 
 ## Feature Request 1: *Locations*
@@ -33,19 +57,30 @@ Example Response:
  ### Features
  
 
- - [ ] Create a route with a method of `get` and a path of `/location`. The route callback should invoke a function to convert the search query to a latitude and longitude. The function should use the provided JSON data.
+ - [x] Create a route with a method of `get` and a path of `/location`. The route callback should invoke a function to convert the search query to a latitude and longitude. The function should use the provided JSON data.
  
- - [ ] A constructor function will ensure that each object is created
+ - [x] A constructor function will ensure that each object is created
        according to the same format when your server receives the
        external data. Ensure your code base uses a constructor function
        for this resource.
- - [ ] Return an object which contains the necessary information for
+ - [x] Return an object which contains the necessary information for
        correct client rendering. See the sample response.
- - [ ] Deploy your updated express server to Heroku.
- - [ ] Confirm that your route is responding as expected by entering
+ - [x] Deploy your updated express server to Heroku.
+ - [x] Confirm that your route is responding as expected by entering
        your deployed backend URL on the City Explorer app's welcome
        page. Then search for a location. You should see the map, but not
        any other data yet.
+
+### Time Estimate
+```
+Estimate of time needed to complete: 1 hour
+
+Start time: 10:30
+
+Finish time: 11:30
+
+Actual time needed to complete: 1 hour
+```
 
 ## Feature Request 2: *Weather*
 
@@ -98,6 +133,18 @@ Example Response:
        your deployed backend URL on the City Explorer app's welcome
        page. Then search for a location. You should see the map, and now
        weather data.
+
+### Time Estimate 
+```
+Estimate of time needed to complete: 2 hours
+
+Start time: 
+
+Finish time: 
+
+Actual time needed to complete: 
+```
+
 ## Feature Request 3: *Errors*
 ### Description
 
@@ -132,3 +179,14 @@ Example Response:
        your deployed backend URL on the City Explorer app's welcome
        page. Then search for an invalid location. The network inspector
        panel should show a 500 for the response to the AJAX query.
+
+### Time Estimate 
+```
+Estimate of time needed to complete: 1 hour
+
+Start time: 
+
+Finish time: 
+
+Actual time needed to complete: 
+```
