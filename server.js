@@ -1,5 +1,5 @@
 'use strict';
-
+let localWeather = [];
 // required libraries
 const express = require('express');
 require('dotenv').config();
@@ -30,11 +30,29 @@ app.get('/location', (request, response) => {
   }
 });
 
+app.get('/weather', (response) => {
+  const weatherData = require('./data/darksky.json');
+  console.log(weatherData[6]);
+  let weatherDataResults  = weatherData[6][2];
+  new Weather(weatherDataResults);
+  console.log(localWeather);
+});
+
 function Location(city, locationData) {
   this.search_query = city;
   this.formatted_query = locationData.display_name;
   this.latitude = locationData.lat;
   this.longitude = locationData.lon;
+}
+
+function Weather(locationData) {
+  locationData.forEach(locationData => {
+    let today = {};
+    today['forecast'] = locationData.summary;
+    today['time'] = new Date(locationData.time);
+    console.log(today);
+    localWeather.push(today);
+  });
 }
 
 function errorHandler(string,response){
