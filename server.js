@@ -9,7 +9,8 @@ const superagent = require('superagent');
 const app = express();
 const PORT = process.env.PORT || 3001;
 let locations = {};
-
+let weathers = {};
+let location = {};
 // allows server to talk to frontend
 app.use(cors());
 
@@ -30,7 +31,7 @@ app.get('/location', (request, response) => {
       : superagent.get(geoDataURL)
         .then(locData => {
           let geoDataResults  = locData.body[0];
-          let location = new Location(city, geoDataResults);
+          location = new Location(city, geoDataResults);
           locations[geoDataURL] = location;
           response.status(200).send(location);
         });
@@ -42,11 +43,17 @@ app.get('/location', (request, response) => {
 
 app.get('/weather', (request, response) => {
   try {
-    const weatherData = require('./data/darksky.json');
-    const localWeather  = weatherData.daily.data.map(dailyData => {
-      return new Weather(dailyData);
-    });
-    response.status(200).send(localWeather);
+    let key = process.env.DARK_SKY_API_KEY;
+    const weatherDataURL = `https://api.darksky.net/forecast/${key}/${location.latitude},${location.longitude}`;
+    weathers[weatherDataURL] ? response.send(weathers[weatherDataURL]) :
+      superagent.get(weatherDataURL)
+        .then(weatherData => {
+          let localWeather = weatherData.body.daily.data.map(dailyData=> {
+            return new Weather(dailyData);
+          });
+          weathers[weatherDataURL] = localWeather;
+          response.status(200).send(localWeather);
+        });
   }
   catch(error) {
     errorHandler('we messed up', request, response);
@@ -66,9 +73,9 @@ function Location(city, locationData) {
   this.longitude = locationData.lon;
 }
 
-function Weather(dayData) {
-  this.forecast = dayData.summary;
-  this.time = new Date(dayData.time * 1000).toString().slice(0,15);
+function Weather(dailyData) {
+  this.forecast = dailyData.summary;
+  this.time = new Date(dailyData.time * 1000).toString().slice(0,15);
 }
 
 //error handler
