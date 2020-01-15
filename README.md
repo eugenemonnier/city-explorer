@@ -2,7 +2,7 @@
 # City Explorer
 
 **Author**: Eugene Monnier
-**Version**: 1.0.0 
+**Version**: 1.02.0 
 
 ## Overview
 The *City Explorer* project is a project to develop a backend server for a website that allows a user to request weather and event information by city.
@@ -40,13 +40,17 @@ This backend utilizes the JavaScript language including the following libraries:
 
 01-14-2020 11:30 - Application now has a fully-functional express server, with a GET route for the location resource. Returns location data for Lynwood for any search request.
 
+01-14-2020 18:00 - Added Dark Sky daily weather forecast from darksky.json.
+
+01-14-2020 20:00 - Included error handling
+
 ## Credits and Collaborations
 <!-- <Give credit (and a link) to other people or resources that helped you build this application. -->
 Ken Dickey
- 
+Blandine Dasilveria
+Jin Kim
 
 ## Feature Request 1: *Locations*
-
 As a user of City Explorer, I want to enter the name of a location so that I can see data about the area of interest to me.
 
 ### Description
@@ -98,7 +102,6 @@ Actual time needed to complete: 1 hour
 ```
 
 ## Feature Request 2: *Weather*
-
 As a user of City Explorer, I want to request current weather information so that I can learn more about the typical weather patterns in the location I had entered.
 
 ### Description
@@ -129,22 +132,22 @@ Example Response:
 ```
 ### Features
 
- - [ ] Create a route with a method of  `get`  and a path of 
+ - [x] Create a route with a method of  `get`  and a path of 
        `/weather`. The callback should use the provided JSON data.
        
- - [ ] A constructor function will ensure that each object is created
+ - [x] A constructor function will ensure that each object is created
        according to the same format when the server receives data.
        Ensure your code base uses a constructor function for this
        resource.
        
- - [ ] Using each weather object of the result, return an array of
+ - [x] Using each weather object of the result, return an array of
        objects for each day of the response which contains the necessary
        information for correct client rendering. See the sample
        response.
        
- - [ ] Deploy your updated server code to Heroku.
+ - [x] Deploy your updated server code to Heroku.
  
- - [ ] Confirm that your route is responding as expected by entering
+ - [x] Confirm that your route is responding as expected by entering
        your deployed backend URL on the City Explorer app's welcome
        page. Then search for a location. You should see the map, and now
        weather data.
@@ -153,14 +156,16 @@ Example Response:
 ```
 Estimate of time needed to complete: 2 hours
 
-Start time: 
+Start time: 12:00
 
-Finish time: 
+Finish time: 18:00
 
-Actual time needed to complete: 
+Actual time needed to complete: 2.5 hours 
 ```
 
 ## Feature Request 3: *Errors*
+As a user, I want clear messages if something goes wrong so I know if I need to make any changes or try again in a different manner.
+
 ### Description
 
 **Given**  that a user does not enter a valid location in the input
@@ -184,13 +189,13 @@ Example Response:
 
 ### Features
 
- - [ ] Create a function to handle errors from any API call.
+ - [x] Create a function to handle errors from any API call.
 
- - [ ] Send a status of 500 and an error message to the client.
+ - [x] Send a status of 500 and an error message to the client.
 
- - [ ] Deploy your updated sever code to Heroku.
+ - [x] Deploy your updated sever code to Heroku.
 
- - [ ] Confirm that your route is responding as expected by entering
+ - [x] Confirm that your route is responding as expected by entering
        your deployed backend URL on the City Explorer app's welcome
        page. Then search for an invalid location. The network inspector
        panel should show a 500 for the response to the AJAX query.
@@ -198,6 +203,194 @@ Example Response:
 ### Time Estimate 
 ```
 Estimate of time needed to complete: 1 hour
+
+Start time: 20:00
+
+Finish time: 20:30
+
+Actual time needed to complete: 30 mins
+```
+
+## Feature Request 4: *Data Formatting*
+As a user, I want the application to provide properly formatted data so that I can view similar sata for any location I choose.
+
+### Description
+
+**Given** that a user enters a valid location in the input
+
+**When** the user clicks the "Explore!" button
+
+**Then** the data will be rendered in the same format every time
+
+### Features
+
+- [ ] Refactor your getWeather callback to use .map and send the resulting array as your response to the client. Continue to use .map for the remainder of labs 7, 8, and 9.
+
+- [ ] Redeploy your application.
+
+### Time Estimate 
+```
+Estimate of time needed to complete: 30 min
+
+Start time: 
+
+Finish time: 
+
+Actual time needed to complete: 
+```
+
+## Feature Request 5: *Location Name*
+As a user, I want to enter the name of a location so that I do not need to look up the latitude & longitude every time I learn about a new location.
+
+### Description
+
+**Given** that a user enters a valid location in the input
+
+**When** the user clicks the "Explore!" button
+
+**Then** the map will be populated with the location centered on the latitude and longitude of the search query
+
+Endpoint:
+`/location`
+
+Example Response:
+```
+{
+  "search_query": "seattle",
+  "formatted_query": "Seattle, WA, USA",
+  "latitude": "47.606210",
+  "longitude": "-122.332071"
+}
+```
+
+### Features
+
+- [ ] Add an environment variable to your server named GEOCODE_API_KEY, and use it appropriately in your code.
+
+- [ ] Your app should have a route with a method of get and a path of /location. Update the route callback to invoke a function to convert the search query to a latitude and longitude. The function should make a Superagent-proxied request to the Google Maps Geocoding API.
+
+- [ ] Return an object which contains the necessary information for correct client rendering. See the sample response.
+
+- [ ] Deploy your application.
+
+- [ ] Confirm that your route is responding as expected by entering your deployed backend URL on the City Explorer app's welcome page. Then search for a location.
+
+### Time Estimate 
+```
+Estimate of time needed to complete: 30 min
+
+Start time: 
+
+Finish time: 
+
+Actual time needed to complete: 
+```
+
+## Feature Request 6: *Current Weather From Any Location*
+As a user, I want to request current weather information at any location, so that I can learn more about the typical weather patterns in the area of interest.
+
+### Description
+
+**Given** that a user enters a valid location in the input
+
+**When** the user clicks the "Explore!" button
+
+**Then** the weather forecast for the upcoming eight days will be displayed in the browser
+
+Endpoint:
+`/weather`
+
+Example Response:
+```
+[
+  {
+    "forecast": "Partly cloudy until afternoon.",
+    "time": "Mon Jan 01 2001"
+  },
+  {
+    "forecast": "Mostly cloudy in the morning.",
+    "time": "Tue Jan 02 2001"
+  },
+  ...
+]
+```
+
+### Features
+
+ - [ ] Add an environment variable to your server named WEATHER_API_KEY, and use it appropriately in your code.
+
+ - [ ] Your app should have a route with a method of get and a path of /weather. The callback should make a Superagent-proxied request to the Dark Sky API for weather information. You will need to include in this request the latitude and longitude sent from the client in the query parameters.
+
+ - [ ] Using each weather object of the result, return an array of objects for each day of the response which contains the necessary information for correct client rendering. See the sample response.
+
+ - [ ] Deploy your application.
+
+ - [ ] Confirm that your route is responding as expected by entering your deployed backend URL on the City Explorer app's welcome page. Then search for a location. Verify weather data is displayed properly.
+
+ ### Time Estimate 
+```
+Estimate of time needed to complete: 30 min
+
+Start time: 
+
+Finish time: 
+
+Actual time needed to complete: 
+```
+
+## Feature Request 6: *Eventful*
+As a user, I want to request information about events in the area, so that I can learn about what is taking place there.
+
+### Description
+
+**Given** that a user enters a valid location in the input
+
+**When** the user clicks the "Explore!" button
+
+**Then** the first twenty events hosted in the area will be displayed in the browser
+
+Endpoint:
+`/events`
+
+Example Response:
+
+```
+[
+  {
+    "link": "http://seattle.eventful.com/events/seattle-code-101-explore-software-development-/E0-001-126675997-3?utm_source=apis&utm_medium=apim&utm_campaign=apic",
+    "name": "Seattle Code 101: Explore Software Development",
+    "event_date": "Sat Dec 7 2019",
+    "summary": "Thinking about a new career in software development? Start here! In this one-day workshop, you&#39;ll get a taste of a day in the life of a software developer. Code 101 helps you learn what it’s like to be a software developer through a day-long immersive course for beginners that focuses on front-end web development technologies. "
+  },
+  {
+    "link": "http://seattle.eventful.com/events/geekzonehosting-raspberry-pi-jam-session-code-c-/E0-001-121109275-3?utm_source=apis&utm_medium=apim&utm_campaign=apic",
+    "name": "GeekZoneHosting Raspberry Pi Jam Session & Code Carnival 2019",
+    "event_date": "Sat Dec 7 2019",
+    "summary": "Join fellow coders, builders, and Raspberry Pi makers in an 8 hour all day event Jam Session builder and code-a-thone to celebrate computer science education week 2019."
+  },
+  ...
+]
+```
+
+### Features:
+
+ - [ ] Add an environment variable to your server named EVENTFUL_API_KEY, and use it appropriately in your code.
+
+ - [ ] Create a route with a method of get and a path of /events. The callback should make a Superagent-proxied request to the Ticketmaster API using the necessary location information.
+
+ - [ ] Create a corresponding constructor function for the result.
+
+ - [ ] For each event in the result, return an object which contains the necessary information for correct client rendering. See the sample response.
+
+ - [ ] Use your existing error handler function.
+
+ - [ ] Redeploy your application.
+
+ - [ ] Confirm that your route is responding as expected by entering your deployed backend URL on the City Explorer app's welcome page. Then search for a location. Verify event data is displayed properly.
+
+ ### Time Estimate 
+```
+Estimate of time needed to complete: 30 min
 
 Start time: 
 
