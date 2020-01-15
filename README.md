@@ -321,7 +321,7 @@ Example Response:
 
  - [x] Your app should have a route with a method of get and a path of /weather. The callback should make a Superagent-proxied request to the Dark Sky API for weather information. You will need to include in this request the latitude and longitude sent from the client in the query parameters.
 
- - [ x Using each weather object of the result, return an array of objects for each day of the response which contains the necessary information for correct client rendering. See the sample response.
+ - [x] Using each weather object of the result, return an array of objects for each day of the response which contains the necessary information for correct client rendering. See the sample response.
 
  - [x] Deploy your application.
 
@@ -392,7 +392,7 @@ Example Response:
 ```
 Estimate of time needed to complete: 30 min
 
-Start time: 
+Start time: 13:30
 
 Finish time: 
 
