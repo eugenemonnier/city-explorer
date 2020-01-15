@@ -265,7 +265,7 @@ Example Response:
 
 ### Features
 
-- [ ] Add an environment variable to your server named GEOCODE_API_KEY, and use it appropriately in your code.
+- [x] Add an environment variable to your server named GEOCODE_API_KEY, and use it appropriately in your code.
 
 - [x] Your app should have a route with a method of get and a path of /location. Update the route callback to invoke a function to convert the search query to a latitude and longitude. The function should make a Superagent-proxied request to the Google Maps Geocoding API.
 
@@ -277,9 +277,9 @@ Example Response:
 
 ### Time Estimate 
 ```
-Estimate of time needed to complete: 30 min
+Estimate of time needed to complete: 1 hour
 
-Start time: 
+Start time: 10:45
 
 Finish time: 
 
@@ -317,25 +317,25 @@ Example Response:
 
 ### Features
 
- - [ ] Add an environment variable to your server named WEATHER_API_KEY, and use it appropriately in your code.
+ - [x] Add an environment variable to your server named WEATHER_API_KEY, and use it appropriately in your code.
 
- - [ ] Your app should have a route with a method of get and a path of /weather. The callback should make a Superagent-proxied request to the Dark Sky API for weather information. You will need to include in this request the latitude and longitude sent from the client in the query parameters.
+ - [x] Your app should have a route with a method of get and a path of /weather. The callback should make a Superagent-proxied request to the Dark Sky API for weather information. You will need to include in this request the latitude and longitude sent from the client in the query parameters.
 
- - [ ] Using each weather object of the result, return an array of objects for each day of the response which contains the necessary information for correct client rendering. See the sample response.
+ - [ x Using each weather object of the result, return an array of objects for each day of the response which contains the necessary information for correct client rendering. See the sample response.
 
- - [ ] Deploy your application.
+ - [x] Deploy your application.
 
- - [ ] Confirm that your route is responding as expected by entering your deployed backend URL on the City Explorer app's welcome page. Then search for a location. Verify weather data is displayed properly.
+ - [x] Confirm that your route is responding as expected by entering your deployed backend URL on the City Explorer app's welcome page. Then search for a location. Verify weather data is displayed properly.
 
  ### Time Estimate 
 ```
-Estimate of time needed to complete: 30 min
+Estimate of time needed to complete: 1 hour
 
-Start time: 
+Start time: 12:30
 
-Finish time: 
+Finish time: 13:25
 
-Actual time needed to complete: 
+Actual time needed to complete: 55 minutes
 ```
 
 ## Feature Request 6: *Eventful*
