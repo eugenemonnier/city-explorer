@@ -224,19 +224,19 @@ As a user, I want the application to provide properly formatted data so that I c
 
 ### Features
 
-- [ ] Refactor your getWeather callback to use .map and send the resulting array as your response to the client. Continue to use .map for the remainder of labs 7, 8, and 9.
+- [x] Refactor your getWeather callback to use .map and send the resulting array as your response to the client. Continue to use .map for the remainder of labs 7, 8, and 9.
 
-- [ ] Redeploy your application.
+- [x] Redeploy your application.
 
 ### Time Estimate 
 ```
 Estimate of time needed to complete: 30 min
 
-Start time: 
+Start time: 10:30
 
-Finish time: 
+Finish time: 10:45
 
-Actual time needed to complete: 
+Actual time needed to complete: 15 min 
 ```
 
 ## Feature Request 5: *Location Name*
