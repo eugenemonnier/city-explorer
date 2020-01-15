@@ -1,5 +1,4 @@
 'use strict';
-let localWeather = [];
 // required libraries
 const express = require('express');
 require('dotenv').config();
@@ -11,6 +10,7 @@ const PORT = process.env.PORT || 3001;
 // allows server to talk to frontend
 app.use(cors());
 
+let localWeather = [];
 // routes
 app.get('/location', (request, response) => {
   try {
