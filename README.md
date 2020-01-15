@@ -153,14 +153,16 @@ Example Response:
 ```
 Estimate of time needed to complete: 2 hours
 
-Start time: 
+Start time: 12:00
 
-Finish time: 
+Finish time: 18:00
 
-Actual time needed to complete: 
+Actual time needed to complete: 2.5 hours 
 ```
 
 ## Feature Request 3: *Errors*
+As a user, I want clear messages if something goes wrong so I know if I need to make any changes or try again in a different manner.
+
 ### Description
 
 **Given**  that a user does not enter a valid location in the input
@@ -194,6 +196,34 @@ Example Response:
        your deployed backend URL on the City Explorer app's welcome
        page. Then search for an invalid location. The network inspector
        panel should show a 500 for the response to the AJAX query.
+
+### Time Estimate 
+```
+Estimate of time needed to complete: 1 hour
+
+Start time: 
+
+Finish time: 
+
+Actual time needed to complete: 
+```
+
+## Feature Request 4: *Data Formatting*
+As a user, I want the application to provide properly formatted data so that I can view similar sata for any location I choose.
+
+### Description
+
+**Given** that a user enters a valid location in the input
+
+**When** the user clicks the "Explore!" button
+
+**Then** the data will be rendered in the same format every time
+
+### Features
+
+- [ ] Refactor your getWeather callback to use .map and send the resulting array as your response to the client. Continue to use .map for the remainder of labs 7, 8, and 9.
+
+- [ ] Redeploy your application.
 
 ### Time Estimate 
 ```
