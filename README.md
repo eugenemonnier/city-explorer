@@ -267,13 +267,13 @@ Example Response:
 
 - [ ] Add an environment variable to your server named GEOCODE_API_KEY, and use it appropriately in your code.
 
-- [ ] Your app should have a route with a method of get and a path of /location. Update the route callback to invoke a function to convert the search query to a latitude and longitude. The function should make a Superagent-proxied request to the Google Maps Geocoding API.
+- [x] Your app should have a route with a method of get and a path of /location. Update the route callback to invoke a function to convert the search query to a latitude and longitude. The function should make a Superagent-proxied request to the Google Maps Geocoding API.
 
-- [ ] Return an object which contains the necessary information for correct client rendering. See the sample response.
+- [x] Return an object which contains the necessary information for correct client rendering. See the sample response.
 
-- [ ] Deploy your application.
+- [x] Deploy your application.
 
-- [ ] Confirm that your route is responding as expected by entering your deployed backend URL on the City Explorer app's welcome page. Then search for a location.
+- [x] Confirm that your route is responding as expected by entering your deployed backend URL on the City Explorer app's welcome page. Then search for a location.
 
 ### Time Estimate 
 ```

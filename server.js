@@ -1,16 +1,21 @@
 'use strict';
-// required libraries
+// required dependencies
 const express = require('express');
 require('dotenv').config();
 const cors = require('cors');
+const superagent = require('superagent');
+
+// global variables
 const app = express();
 const PORT = process.env.PORT || 3001;
+let locations = {};
 
 // allows server to talk to frontend
 app.use(cors());
 
-// routes
 
+
+// routes
 // don't forget to...
 app.get('/JulyTalk', (request, response) => {
   response.redirect('https://www.youtube.com/watch?v=YWywb9i-z7Y');
@@ -19,12 +24,17 @@ app.get('/JulyTalk', (request, response) => {
 app.get('/location', (request, response) => {
   try {
     let city = request.query.city;
-    const geoData = require('./data/geo.json');
-    let geoDataResults  = geoData[0];
-    let locations = new Location(city, geoDataResults);
-    response.status(200).send(locations);
+    let key = process.env.GEOCODE_API_KEY;
+    const geoDataURL = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json&limit=1`;
+    locations[geoDataURL] ? response.send(locations[geoDataURL])
+      : superagent.get(geoDataURL)
+        .then(locData => {
+          let geoDataResults  = locData.body[0];
+          let location = new Location(city, geoDataResults);
+          locations[geoDataURL] = location;
+          response.status(200).send(location);
+        });
   }
-
   catch(error) {
     errorHandler('we messed up', request, response);
   }
@@ -48,7 +58,7 @@ app.get('*', (request,response) => {
   response.status(404).send(`<p style="margin: 20px; font-size: 60px; font-weight: bolder">404 Error</p><p style="margin-left: 20px; font-size: 30px">The requested URL "${request.url}" was not found on this server.</p>`);
 });
 
-// constructors 
+// constructors
 function Location(city, locationData) {
   this.search_query = city;
   this.formatted_query = locationData.display_name;
