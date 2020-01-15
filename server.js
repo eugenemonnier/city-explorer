@@ -46,7 +46,7 @@ app.get('/weather', (request, response) => {
 
 // 404 route
 app.get('*', (request,response) => {
-  response.status(404).send(`This requested url ${request} does not exist on this server.`);
+  response.status(404).send(`<p style="margin: 20px; font-size: 60px; font-weight: bolder">404 Error</p><p style="margin-left: 20px; font-size: 30px">The requested URL "${request.url}" was not found on this server.</p>`);
 });
 
 // constructors 
@@ -63,7 +63,7 @@ function Weather(dayData) {
 }
 
 //error handler
-function errorHandler(string,response){
+function errorHandler(string,request,response){
   response.status(500).send(string);
 }
 
