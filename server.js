@@ -10,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 let locations = {};
 let weathers = {};
+let events = {};
 let location = {};
 // allows server to talk to frontend
 app.use(cors());
@@ -60,11 +61,32 @@ app.get('/weather', (request, response) => {
   }
 });
 
+app.get('/events', (request, response) => {
+  try {
+    let key = process.env.EVENTFUL_API_KEY;
+    // const eventDataURL = `http://api.eventful.com/rest/events/search?${key}&where=${location.latitude},${location.longitude}&date=This Week`;
+    const eventDataURL = `http://api.eventful.com/json/events/search?where=${location.latitude},${location.longitude}&date=Today&app_key=${key}`;
+    console.log('eventDataURL: ', eventDataURL);
+    events[eventDataURL] ? response.send(events[eventDataURL]) 
+      : superagent.get(eventDataURL)
+        .then(eventData => {
+          console.log('eventData: ', eventData);
+          // let localEvent = eventData.body.map(thisEventData=> {
+          //   // return new Weather(thisEventData);
+          // });
+          // events[eventDataURL] = localEvent;
+          // response.status(200).send(localEvent);
+        });
+  }
+  catch(error) {
+    errorHandler('we messed up', request, response);
+  }
+});
+
 // 404 route
 app.get('*', (request,response) => {
   response.status(404).send(`<p style="margin: 20px; font-size: 60px; font-weight: bolder">404 Error</p><p style="margin-left: 20px; font-size: 30px">The requested URL "${request.url}" was not found on this server.</p>`);
 });
-
 // constructors
 function Location(city, locationData) {
   this.search_query = city;
