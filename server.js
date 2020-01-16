@@ -10,7 +10,6 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 let locations = {};
 let weathers = {};
-let events = {};
 let location = {};
 // allows server to talk to frontend
 app.use(cors());
@@ -64,19 +63,15 @@ app.get('/weather', (request, response) => {
 app.get('/events', (request, response) => {
   try {
     let key = process.env.EVENTFUL_API_KEY;
-    // const eventDataURL = `http://api.eventful.com/rest/events/search?${key}&where=${location.latitude},${location.longitude}&date=This Week`;
-    const eventDataURL = `http://api.eventful.com/json/events/search?where=${location.latitude},${location.longitude}&date=Today&app_key=${key}`;
-    console.log('eventDataURL: ', eventDataURL);
-    events[eventDataURL] ? response.send(events[eventDataURL]) 
-      : superagent.get(eventDataURL)
-        .then(eventData => {
-          console.log('eventData: ', eventData);
-          // let localEvent = eventData.body.map(thisEventData=> {
-          //   // return new Weather(thisEventData);
-          // });
-          // events[eventDataURL] = localEvent;
-          // response.status(200).send(localEvent);
+    const eventDataURL = `http://api.eventful.com/json/events/search?location=${location.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
+    superagent.get(eventDataURL)
+      .then(eventData => {
+        let eventMassData = JSON.parse(eventData.text);
+        let localEvent = eventMassData.events.event.map(thisEventData => {
+          return new NewEvent(thisEventData);
         });
+        response.status(200).send(localEvent);
+      });
   }
   catch(error) {
     errorHandler('we messed up', request, response);
@@ -98,6 +93,13 @@ function Location(city, locationData) {
 function Weather(dailyData) {
   this.forecast = dailyData.summary;
   this.time = new Date(dailyData.time * 1000).toString().slice(0,15);
+}
+
+function NewEvent(thisEventData) {
+  this.name = thisEventData.title;
+  this.event_date = thisEventData.start_time.slice(0, 10);
+  this.link = thisEventData.url;
+  this.summary = thisEventData.description;
 }
 
 //error handler
