@@ -4,6 +4,8 @@ const express = require('express');
 require('dotenv').config();
 const cors = require('cors');
 const superagent = require('superagent');
+const pg = require('pg');
+const client = new pg.Client(process.env.DATABASE_URL);
 
 // global variables
 const app = express();
@@ -14,6 +16,7 @@ let location = {};
 // allows server to talk to frontend
 app.use(cors());
 
+client.on('error', err => console.error(err));
 
 
 // routes
@@ -33,6 +36,9 @@ app.get('/location', (request, response) => {
           let geoDataResults  = locData.body[0];
           location = new Location(city, geoDataResults);
           locations[geoDataURL] = location;
+          let sql = 'INSERT INTO locations (city, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
+          let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
+          client.query(sql, safeValues);
           response.status(200).send(location);
         });
   }
@@ -108,6 +114,12 @@ function errorHandler(string,request,response){
 }
 
 // turn it on
-app.listen(PORT, () => {
-  console.log(`listen on ${PORT}`);
-});
+client.connect()
+  .then( () => {
+    app.listen(PORT, () => {
+      console.log('Server up on', PORT);
+    });
+  })
+  .catch(err => {
+    throw `PG Startup Error: ${err.message}`;
+  });
