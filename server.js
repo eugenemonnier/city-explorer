@@ -30,17 +30,29 @@ app.get('/location', (request, response) => {
     let city = request.query.city;
     let key = process.env.GEOCODE_API_KEY;
     const geoDataURL = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json&limit=1`;
-    locations[geoDataURL] ? response.send(locations[geoDataURL])
-      : superagent.get(geoDataURL)
-        .then(locData => {
-          let geoDataResults  = locData.body[0];
-          location = new Location(city, geoDataResults);
-          locations[geoDataURL] = location;
-          let sql = 'INSERT INTO locations (city, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
-          let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
-          client.query(sql, safeValues);
-          response.status(200).send(location);
-        });
+    let firstSql = 'SELECT * FROM locations WHERE search_query=$1;';
+    let safeSqlValue = [city];
+    return client.query(firstSql, safeSqlValue)
+      .then(sqlData => {
+        console.log(sqlData);
+        client.query(`SELECT * FROM locations WHERE search_query='${city}';`) ?
+          response.send.client.query(`SELECT * FROM locations WHERE "search_query" = '${city}';`).then(res => {
+            const fields = res.fields.map(field => field.name);
+
+            console.log(fields);
+          })
+        // locations[geoDataURL] ? response.send(locations[geoDataURL])
+          : superagent.get(geoDataURL)
+            .then(locData => {
+              let geoDataResults  = locData.body[0];
+              location = new Location(city, geoDataResults);
+              locations[geoDataURL] = location;
+              let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
+              let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
+              client.query(sql, safeValues);
+              response.status(200).send(location);
+            });
+      });
   }
   catch(error) {
     errorHandler('we messed up', request, response);
