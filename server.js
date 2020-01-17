@@ -10,8 +10,6 @@ const client = new pg.Client(process.env.DATABASE_URL);
 // global variables
 const app = express();
 const PORT = process.env.PORT || 3001;
-let locations = {};
-let weathers = {};
 let location = {};
 // allows server to talk to frontend
 app.use(cors());
@@ -43,7 +41,6 @@ app.get('/location', (request, response) => {
             .then(locData => {
               let geoDataResults  = locData.body[0];
               location = new Location(city, geoDataResults);
-              locations[geoDataURL] = location;
               let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
               let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
               client.query(sql, safeValues);
@@ -110,6 +107,50 @@ app.get('/events', (request, response) => {
     errorHandler('Robert messed up: ', error, request, response);
   }
 });
+
+app.get('/movies', (request, response) => {
+  try {
+    let key = process.env.MOVIE_API_KEY;
+    const movieDataURL = `https://api.themoviedb.org/3/search/multi?api_key=${key}&language=en-US&query=${request.query.search_query}&page=1&include_adult=false`;
+    let firstSql = 'SELECT * FROM movies WHERE city=$1;';
+    let safeSqlValue = [request.query.search_query];
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        results.rows.length > 0 ? response.status(200).json(results.rows[0].movie_data)
+          : superagent.get(movieDataURL)
+            .then(movieData => {
+              let movieMassData = JSON.parse(movieData.text);
+              let movie =  movieMassData.results.map(thisMovieData => {
+                if (thisMovieData.media_type === 'movie') {
+                  return new Movies(thisMovieData);
+                }
+              });
+              response.status(200).send(movie);
+              let sql = 'INSERT INTO movies (city, movie_data) VALUES ($1, $2);';
+              let safeValues = [request.query.search_query, JSON.stringify(movie)];
+              client.query(sql, safeValues);
+            });
+      });
+  }
+  catch(error) {
+    errorHandler('Robert messed up: ', error, request, response);
+  }
+});
+
+function Movies(movieData) {
+  this.title = movieData.title;
+  this.released_on = movieData.release_date;
+  this.total_votes = movieData.vote_count;
+  this.average_votes = movieData.vote_average;
+  this.popularity = movieData.popularity;
+  this.image_url = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${movieData.poster_path}`;
+  this.overview = movieData.overview;
+
+  // p><span>{{ title }}</span> was relased on {{ released_on }}. Out of {{ total_votes }} total votes, {{title}} has an average vote of {{ average_votes }} and a popularity score of {{ popularity }}.</p>
+  // <img src="{{ image_url }}">
+  // <p>{{ overview }}</p>
+
+}
 
 // 404 route
 app.get('*', (request,response) => {
