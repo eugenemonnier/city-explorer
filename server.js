@@ -4,6 +4,8 @@ const express = require('express');
 require('dotenv').config();
 const cors = require('cors');
 const superagent = require('superagent');
+const pg = require('pg');
+const client = new pg.Client(process.env.DATABASE_URL);
 
 // global variables
 const app = express();
@@ -14,6 +16,7 @@ let location = {};
 // allows server to talk to frontend
 app.use(cors());
 
+client.on('error', err => console.error(err));
 
 
 // routes
@@ -27,17 +30,25 @@ app.get('/location', (request, response) => {
     let city = request.query.city;
     let key = process.env.GEOCODE_API_KEY;
     const geoDataURL = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json&limit=1`;
-    locations[geoDataURL] ? response.send(locations[geoDataURL])
-      : superagent.get(geoDataURL)
-        .then(locData => {
-          let geoDataResults  = locData.body[0];
-          location = new Location(city, geoDataResults);
-          locations[geoDataURL] = location;
-          response.status(200).send(location);
-        });
+    let firstSql = 'SELECT * FROM locations WHERE search_query=$1;';
+    let safeSqlValue = [city];
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        results.rows.length > 0 ? response.send(results.rows[0])
+          : superagent.get(geoDataURL)
+            .then(locData => {
+              let geoDataResults  = locData.body[0];
+              location = new Location(city, geoDataResults);
+              locations[geoDataURL] = location;
+              let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
+              let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
+              client.query(sql, safeValues);
+              response.status(200).send(location);
+            });
+      });
   }
   catch(error) {
-    errorHandler('we messed up', request, response);
+    errorHandler('Robert messed up: ', error, request, response);
   }
 });
 
@@ -56,7 +67,7 @@ app.get('/weather', (request, response) => {
         });
   }
   catch(error) {
-    errorHandler('we messed up', request, response);
+    errorHandler('Robert messed up: ', error, request, response);
   }
 });
 
@@ -74,7 +85,7 @@ app.get('/events', (request, response) => {
       });
   }
   catch(error) {
-    errorHandler('we messed up', request, response);
+    errorHandler('Robert messed up: ', error, request, response);
   }
 });
 
@@ -108,6 +119,12 @@ function errorHandler(string,request,response){
 }
 
 // turn it on
-app.listen(PORT, () => {
-  console.log(`listen on ${PORT}`);
-});
+client.connect()
+  .then( () => {
+    app.listen(PORT, () => {
+      console.log('Server up on', PORT);
+    });
+  })
+  .catch(err => {
+    throw `PG Startup Error: ${err.message}`;
+  });
