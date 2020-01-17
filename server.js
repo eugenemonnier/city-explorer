@@ -111,7 +111,7 @@ app.get('/events', (request, response) => {
 app.get('/movies', (request, response) => {
   try {
     let key = process.env.MOVIE_API_KEY;
-    const movieDataURL = `https://api.themoviedb.org/3/search/multi?api_key=${key}&language=en-US&query=${request.query.search_query}&page=1&include_adult=false`;
+    const movieDataURL = `https://api.themoviedb.org/3/discover/movie?api_key=${key}&language=en-US&query=${request.query.search_query}&sory_by=popularity.desc&page=1&include_adult=false`;
     let firstSql = 'SELECT * FROM movies WHERE city=$1;';
     let safeSqlValue = [request.query.search_query];
     client.query(firstSql,safeSqlValue)
@@ -121,9 +121,7 @@ app.get('/movies', (request, response) => {
             .then(movieData => {
               let movieMassData = JSON.parse(movieData.text);
               let movie =  movieMassData.results.map(thisMovieData => {
-                if (thisMovieData.media_type === 'movie') {
-                  return new Movies(thisMovieData);
-                }
+                return new Movies(thisMovieData);
               });
               response.status(200).send(movie);
               let sql = 'INSERT INTO movies (city, movie_data) VALUES ($1, $2);';
