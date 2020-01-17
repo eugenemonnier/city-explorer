@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS locations;
 DROP TABLE IF EXISTS weather;
 DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS movies;
 
 
   CREATE TABLE locations (
@@ -23,3 +24,9 @@ DROP TABLE IF EXISTS events;
     city VARCHAR(255),
     event_data JSON
 );	
+
+CREATE TABLE movies (
+    id SERIAL PRIMARY KEY,
+    city VARCHAR(255),
+    movie_data JSON
+);
