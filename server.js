@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+/* eslint-disable no-unused-expressions */
 'use strict';
 // required dependencies
 const express = require('express');
@@ -10,8 +12,8 @@ const client = new pg.Client(process.env.DATABASE_URL);
 // global variables
 const app = express();
 const PORT = process.env.PORT || 3001;
-let locations = {};
-let weathers = {};
+// let locations = {};
+// let weathers = {};
 let location = {};
 // allows server to talk to frontend
 app.use(cors());
@@ -34,17 +36,22 @@ app.get('/location', (request, response) => {
     let safeSqlValue = [city];
     client.query(firstSql,safeSqlValue)
       .then (results => {
-        results.rows.length > 0 ? response.send(results.rows[0])
-          : superagent.get(geoDataURL)
+        if (results.rows.length > 0) {
+          response.status(200).send(results.rows[0]);
+          // console.log(results.rows[0].search_query);
+          // let location = results.rows[0];
+          // response.status(200).send(location);
+        } else {
+          superagent.get(geoDataURL)
             .then(locData => {
               let geoDataResults  = locData.body[0];
               location = new Location(city, geoDataResults);
-              locations[geoDataURL] = location;
               let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
               let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
               client.query(sql, safeValues);
               response.status(200).send(location);
             });
+        }
       });
   }
   catch(error) {
@@ -56,15 +63,40 @@ app.get('/weather', (request, response) => {
   try {
     let key = process.env.DARK_SKY_API_KEY;
     const weatherDataURL = `https://api.darksky.net/forecast/${key}/${location.latitude},${location.longitude}`;
-    weathers[weatherDataURL] ? response.send(weathers[weatherDataURL]) :
-      superagent.get(weatherDataURL)
-        .then(weatherData => {
-          let localWeather = weatherData.body.daily.data.map(dailyData=> {
-            return new Weather(dailyData);
-          });
-          weathers[weatherDataURL] = localWeather;
-          response.status(200).send(localWeather);
-        });
+    let firstSql = 'SELECT * FROM weather WHERE latitude=$1 AND longitude=$2;';
+    let safeSqlValue = [location.latitude, location.longitude];
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        if (results.rows.length > 0) {
+          let localWeather = JSON.parse(results.rows[0].forecast);
+          console.log(localWeather);
+          response.send(localWeather);
+        } else {
+          superagent.get(weatherDataURL)
+            .then(weatherData => {
+              let localWeather = weatherData.body.daily.data.map(dailyData=> {
+                return new Weather(dailyData);
+              });
+              let jsonWeather = JSON.stringify(localWeather);
+              let sql = 'INSERT INTO weather (latitude , longitude, forecast) VALUES ($1, $2, $3);';
+              let safeValues = [location.latitude, location.longitude, jsonWeather];
+              client.query(sql, safeValues);
+              console.log(localWeather);
+              console.log(location.latitude);
+              console.log(location.longitude);
+              response.status(200).send(localWeather);
+            });
+        }
+      });
+    // weathers[weatherDataURL] ? response.send(weathers[weatherDataURL]) :
+    // superagent.get(weatherDataURL)
+    //   .then(weatherData => {
+    //     let localWeather = weatherData.body.daily.data.map(dailyData=> {
+    //       return new Weather(dailyData);
+    //       });
+    //       weathers[weatherDataURL] = localWeather;
+    //       response.status(200).send(localWeather);
+    //     });
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
