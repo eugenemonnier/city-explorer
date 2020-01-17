@@ -20,8 +20,6 @@ DROP TABLE IF EXISTS events;
 	
   CREATE TABLE events (
     id SERIAL PRIMARY KEY,
-    link VARCHAR(255),
-    event_name VARCHAR(255),
-    summary VARCHAR(255),
-    event_date DATE
+    city VARCHAR(255),
+    event_data JSON
 );	

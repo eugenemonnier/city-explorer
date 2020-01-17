@@ -65,11 +65,8 @@ app.get('/weather', (request, response) => {
     let safeSqlValue = [location.latitude, location.longitude];
     client.query(firstSql,safeSqlValue)
       .then (results => {
-        if (results.rows.length > 0) {
-          console.log(results.rows[0].forecast);
-          response.status(200).json(results.rows[0].forecast);
-        } else {
-          superagent.get(weatherDataURL)
+        results.rows.length > 0 ? response.status(200).json(results.rows[0].forecast)
+          : superagent.get(weatherDataURL)
             .then(weatherData => {
               let localWeather = weatherData.body.daily.data.map(dailyData=> {
                 return new Weather(dailyData);
@@ -80,7 +77,6 @@ app.get('/weather', (request, response) => {
               client.query(sql, safeValues);
               response.status(200).send(localWeather);
             });
-        }
       });
   }
   catch(error) {
@@ -92,13 +88,22 @@ app.get('/events', (request, response) => {
   try {
     let key = process.env.EVENTFUL_API_KEY;
     const eventDataURL = `http://api.eventful.com/json/events/search?location=${request.query.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
-    superagent.get(eventDataURL)
-      .then(eventData => {
-        let eventMassData = JSON.parse(eventData.text);
-        let localEvent = eventMassData.events.event.map(thisEventData => {
-          return new NewEvent(thisEventData);
-        });
-        response.status(200).send(localEvent);
+    let firstSql = 'SELECT * FROM events WHERE city=$1;';
+    let safeSqlValue = [request.query.search_query];
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        results.rows.length > 0 ? response.status(200).json(results.rows[0].event_data)
+          : superagent.get(eventDataURL)
+            .then(eventData => {
+              let eventMassData = JSON.parse(eventData.text);
+              let localEvent = eventMassData.events.event.map(thisEventData => {
+                return new NewEvent(thisEventData);
+              });
+              let sql = 'INSERT INTO events (city, event_data) VALUES ($1, $2);';
+              let safeValues = [request.query.search_query, JSON.stringify(localEvent)];
+              client.query(sql, safeValues);
+              response.status(200).send(localEvent);
+            });
       });
   }
   catch(error) {
@@ -115,9 +120,7 @@ function Location(city, locationData) {
   this.search_query = city;
   this.formatted_query = locationData.display_name;
   this.latitude = locationData.lat;
-  console.log(this.latitude);
   this.longitude = locationData.lon;
-  console.log(this.longitude);
 }
 
 function Weather(dailyData) {
