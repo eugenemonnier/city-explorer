@@ -34,8 +34,12 @@ app.get('/location', (request, response) => {
     let safeSqlValue = [city];
     client.query(firstSql,safeSqlValue)
       .then (results => {
-        results.rows.length > 0 ? response.send(results.rows[0])
-          : superagent.get(geoDataURL)
+        if(results.rows.length > 0) {
+          response.send(results.rows[0]);
+          location.latitude = results.rows[0].latitude;
+          location.longitude = results.rows[0].longitude;
+        } else {
+          superagent.get(geoDataURL)
             .then(locData => {
               let geoDataResults  = locData.body[0];
               location = new Location(city, geoDataResults);
@@ -45,6 +49,7 @@ app.get('/location', (request, response) => {
               client.query(sql, safeValues);
               response.status(200).send(location);
             });
+        }
       });
   }
   catch(error) {
@@ -56,15 +61,23 @@ app.get('/weather', (request, response) => {
   try {
     let key = process.env.DARK_SKY_API_KEY;
     const weatherDataURL = `https://api.darksky.net/forecast/${key}/${location.latitude},${location.longitude}`;
-    weathers[weatherDataURL] ? response.send(weathers[weatherDataURL]) :
-      superagent.get(weatherDataURL)
-        .then(weatherData => {
-          let localWeather = weatherData.body.daily.data.map(dailyData=> {
-            return new Weather(dailyData);
-          });
-          weathers[weatherDataURL] = localWeather;
-          response.status(200).send(localWeather);
-        });
+    let firstSql = 'SELECT * FROM weather WHERE latitude=$1 AND longitude=$2;';
+    let safeSqlValue = [location.latitude, location.longitude];
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        results.rows.length > 0 ? response.status(200).json(results.rows[0].forecast)
+          : superagent.get(weatherDataURL)
+            .then(weatherData => {
+              let localWeather = weatherData.body.daily.data.map(dailyData=> {
+                return new Weather(dailyData);
+              });
+              let jsonWeather = JSON.stringify(localWeather);
+              let sql = 'INSERT INTO weather (latitude , longitude, forecast) VALUES ($1, $2, $3);';
+              let safeValues = [location.latitude, location.longitude, jsonWeather];
+              client.query(sql, safeValues);
+              response.status(200).send(localWeather);
+            });
+      });
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
@@ -74,14 +87,23 @@ app.get('/weather', (request, response) => {
 app.get('/events', (request, response) => {
   try {
     let key = process.env.EVENTFUL_API_KEY;
-    const eventDataURL = `http://api.eventful.com/json/events/search?location=${location.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
-    superagent.get(eventDataURL)
-      .then(eventData => {
-        let eventMassData = JSON.parse(eventData.text);
-        let localEvent = eventMassData.events.event.map(thisEventData => {
-          return new NewEvent(thisEventData);
-        });
-        response.status(200).send(localEvent);
+    const eventDataURL = `http://api.eventful.com/json/events/search?location=${request.query.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
+    let firstSql = 'SELECT * FROM events WHERE city=$1;';
+    let safeSqlValue = [request.query.search_query];
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        results.rows.length > 0 ? response.status(200).json(results.rows[0].event_data)
+          : superagent.get(eventDataURL)
+            .then(eventData => {
+              let eventMassData = JSON.parse(eventData.text);
+              let localEvent = eventMassData.events.event.map(thisEventData => {
+                return new NewEvent(thisEventData);
+              });
+              let sql = 'INSERT INTO events (city, event_data) VALUES ($1, $2);';
+              let safeValues = [request.query.search_query, JSON.stringify(localEvent)];
+              client.query(sql, safeValues);
+              response.status(200).send(localEvent);
+            });
       });
   }
   catch(error) {
