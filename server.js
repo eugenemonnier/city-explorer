@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-/* eslint-disable no-unused-expressions */
 'use strict';
 // required dependencies
 const express = require('express');
@@ -12,8 +10,8 @@ const client = new pg.Client(process.env.DATABASE_URL);
 // global variables
 const app = express();
 const PORT = process.env.PORT || 3001;
-// let locations = {};
-// let weathers = {};
+let locations = {};
+let weathers = {};
 let location = {};
 // allows server to talk to frontend
 app.use(cors());
@@ -36,16 +34,16 @@ app.get('/location', (request, response) => {
     let safeSqlValue = [city];
     client.query(firstSql,safeSqlValue)
       .then (results => {
-        if (results.rows.length > 0) {
-          response.status(200).send(results.rows[0]);
-          // console.log(results.rows[0].search_query);
-          // let location = results.rows[0];
-          // response.status(200).send(location);
+        if(results.rows.length > 0) {
+          response.send(results.rows[0]);
+          location.latitude = results.rows[0].latitude;
+          location.longitude = results.rows[0].longitude;
         } else {
           superagent.get(geoDataURL)
             .then(locData => {
               let geoDataResults  = locData.body[0];
               location = new Location(city, geoDataResults);
+              locations[geoDataURL] = location;
               let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
               let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
               client.query(sql, safeValues);
@@ -68,9 +66,8 @@ app.get('/weather', (request, response) => {
     client.query(firstSql,safeSqlValue)
       .then (results => {
         if (results.rows.length > 0) {
-          let localWeather = JSON.parse(results.rows[0].forecast);
-          console.log(localWeather);
-          response.send(localWeather);
+          console.log(results.rows[0].forecast);
+          response.status(200).json(results.rows[0].forecast);
         } else {
           superagent.get(weatherDataURL)
             .then(weatherData => {
@@ -81,22 +78,10 @@ app.get('/weather', (request, response) => {
               let sql = 'INSERT INTO weather (latitude , longitude, forecast) VALUES ($1, $2, $3);';
               let safeValues = [location.latitude, location.longitude, jsonWeather];
               client.query(sql, safeValues);
-              console.log(localWeather);
-              console.log(location.latitude);
-              console.log(location.longitude);
               response.status(200).send(localWeather);
             });
         }
       });
-    // weathers[weatherDataURL] ? response.send(weathers[weatherDataURL]) :
-    // superagent.get(weatherDataURL)
-    //   .then(weatherData => {
-    //     let localWeather = weatherData.body.daily.data.map(dailyData=> {
-    //       return new Weather(dailyData);
-    //       });
-    //       weathers[weatherDataURL] = localWeather;
-    //       response.status(200).send(localWeather);
-    //     });
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
@@ -106,7 +91,7 @@ app.get('/weather', (request, response) => {
 app.get('/events', (request, response) => {
   try {
     let key = process.env.EVENTFUL_API_KEY;
-    const eventDataURL = `http://api.eventful.com/json/events/search?location=${location.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
+    const eventDataURL = `http://api.eventful.com/json/events/search?location=${request.query.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
     superagent.get(eventDataURL)
       .then(eventData => {
         let eventMassData = JSON.parse(eventData.text);
@@ -130,7 +115,9 @@ function Location(city, locationData) {
   this.search_query = city;
   this.formatted_query = locationData.display_name;
   this.latitude = locationData.lat;
+  console.log(this.latitude);
   this.longitude = locationData.lon;
+  console.log(this.longitude);
 }
 
 function Weather(dailyData) {
