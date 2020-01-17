@@ -32,16 +32,9 @@ app.get('/location', (request, response) => {
     const geoDataURL = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json&limit=1`;
     let firstSql = 'SELECT * FROM locations WHERE search_query=$1;';
     let safeSqlValue = [city];
-    return client.query(firstSql, safeSqlValue)
-      .then(sqlData => {
-        console.log(sqlData);
-        client.query(`SELECT * FROM locations WHERE search_query='${city}';`) ?
-          response.send.client.query(`SELECT * FROM locations WHERE "search_query" = '${city}';`).then(res => {
-            const fields = res.fields.map(field => field.name);
-
-            console.log(fields);
-          })
-        // locations[geoDataURL] ? response.send(locations[geoDataURL])
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        results.rows.length > 0 ? response.send(results.rows[0])
           : superagent.get(geoDataURL)
             .then(locData => {
               let geoDataResults  = locData.body[0];
@@ -55,7 +48,7 @@ app.get('/location', (request, response) => {
       });
   }
   catch(error) {
-    errorHandler('we messed up', request, response);
+    errorHandler('Robert messed up: ', error, request, response);
   }
 });
 
@@ -74,7 +67,7 @@ app.get('/weather', (request, response) => {
         });
   }
   catch(error) {
-    errorHandler('we messed up', request, response);
+    errorHandler('Robert messed up: ', error, request, response);
   }
 });
 
@@ -92,7 +85,7 @@ app.get('/events', (request, response) => {
       });
   }
   catch(error) {
-    errorHandler('we messed up', request, response);
+    errorHandler('Robert messed up: ', error, request, response);
   }
 });
 
