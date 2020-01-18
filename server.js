@@ -6,6 +6,7 @@ const cors = require('cors');
 const superagent = require('superagent');
 const pg = require('pg');
 const client = new pg.Client(process.env.DATABASE_URL);
+const yelp = require('yelp-fusion');
 
 // global variables
 const app = express();
@@ -111,7 +112,7 @@ app.get('/events', (request, response) => {
 app.get('/movies', (request, response) => {
   try {
     let key = process.env.MOVIE_API_KEY;
-    const movieDataURL = `https://api.themoviedb.org/3/discover/movie?api_key=${key}&language=en-US&query=${request.query.search_query}&sory_by=popularity.desc&page=1&include_adult=false`;
+    const movieDataURL = `https://api.themoviedb.org/3/search/movie?api_key=${key}&language=en-US&query=${request.query.search_query}&sort_by=popularity.desc&include_adult=false`;
     let firstSql = 'SELECT * FROM movies WHERE city=$1;';
     let safeSqlValue = [request.query.search_query];
     client.query(firstSql,safeSqlValue)
@@ -135,20 +136,36 @@ app.get('/movies', (request, response) => {
   }
 });
 
-function Movies(movieData) {
-  this.title = movieData.title;
-  this.released_on = movieData.release_date;
-  this.total_votes = movieData.vote_count;
-  this.average_votes = movieData.vote_average;
-  this.popularity = movieData.popularity;
-  this.image_url = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${movieData.poster_path}`;
-  this.overview = movieData.overview;
-
-  // p><span>{{ title }}</span> was relased on {{ released_on }}. Out of {{ total_votes }} total votes, {{title}} has an average vote of {{ average_votes }} and a popularity score of {{ popularity }}.</p>
-  // <img src="{{ image_url }}">
-  // <p>{{ overview }}</p>
-
-}
+app.get('/yelp', (request, response) => {
+  try {
+    let key = process.env.YELP_API_KEY;
+    const yelpClinet = yelp.client(key);
+    const yelpSearch = {
+      term: 'restaurant',
+      location: request.query.search_query,
+    };
+    let firstSql = 'SELECT * FROM yelp WHERE city=$1;';
+    let safeSqlValue = [request.query.search_query];
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        results.rows.length > 0 ? response.status(200).json(results.rows[0].yelp_data)
+          : yelpClinet.search(yelpSearch)
+            .then(yelpData => {
+              let yelpMassData = JSON.parse(yelpData.body);
+              let yelpReview =  yelpMassData.businesses.map(thisYelpData => {
+                return new Yelp(thisYelpData);
+              });
+              response.status(200).send(yelpReview);
+              let sql = 'INSERT INTO yelp (city, yelp_data) VALUES ($1, $2);';
+              let safeValues = [request.query.search_query, JSON.stringify(yelpReview)];
+              client.query(sql, safeValues);
+            });
+      });
+  }
+  catch(error) {
+    errorHandler('Robert messed up: ', error, request, response);
+  }
+});
 
 // 404 route
 app.get('*', (request,response) => {
@@ -172,6 +189,24 @@ function NewEvent(thisEventData) {
   this.event_date = thisEventData.start_time.slice(0, 10);
   this.link = thisEventData.url;
   this.summary = thisEventData.description;
+}
+
+function Movies(movieData) {
+  this.title = movieData.title;
+  this.released_on = movieData.release_date;
+  this.total_votes = movieData.vote_count;
+  this.average_votes = movieData.vote_average;
+  this.popularity = movieData.popularity;
+  this.image_url = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${movieData.poster_path}`;
+  this.overview = movieData.overview;
+}
+
+function Yelp(yelpData) {
+  this.name = yelpData.name;
+  this.url = yelpData.url;
+  this.rating = yelpData.rating;
+  this.price = yelpData.price;
+  this.image_url = yelpData.image_url;
 }
 
 //error handler
