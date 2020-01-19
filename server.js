@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+/* eslint-disable no-unused-expressions */
 'use strict';
 // required dependencies
 const express = require('express');
@@ -166,6 +168,55 @@ app.get('/yelp', (request, response) => {
     errorHandler('Robert messed up: ', error, request, response);
   }
 });
+
+app.get('/trails', (request, response) => {
+  try {
+    let key = process.env.TRAIL_API_KEY;
+    const trailsDataURL = `https://www.hikingproject.com/data/get-trails?lat=${location.latitude}&lon=${location.longitude}&maxDistance=10&key=${key}`;
+    console.log(trailsDataURL);
+    let firstSql = 'SELECT * FROM trails WHERE latitude=$1 AND longitude =$2;';
+    let safeSqlValue = [location.latitude, location.longitude];
+    client.query(firstSql,safeSqlValue)
+      .then (results => {
+        results.rows.length > 0 ? response.status(200).json(results.rows[0].trails_data)
+          : superagent.get(trailsDataURL)
+            .then(trailsData => {
+              let trailsMassData = JSON.parse(trailsData.text);
+              let trail =  trailsMassData.trails.map(trailData => {
+                console.log(trailData);
+                return new Trails(trailData);
+              });
+              console.log(trail);
+              response.status(200).send(trail);
+              let sql = 'INSERT INTO trails (latitude , longitude, trails_data) VALUES ($1, $2, $3);';
+              let safeValues = [location.latitude, location.longitude, JSON.stringify(trail)];
+              client.query(sql, safeValues);
+            });
+      });
+  }
+  catch(error) {
+    errorHandler('Robert messed up: ', error, request, response);
+  }
+});
+
+function Trails(trailData) {
+  this.name = trailData.name;
+  this.trail_url = trailData.url;
+  this.location = trailData.location;
+  this.length = trailData.length;
+  if (trailData.conditionDate.includes('1970-01-01')) {
+    this.condition_date = new Date().toString().slice(0,15);
+    this.condition_time = '12:00 AM';
+    this.conditions = 'Unknown';
+  } else {
+    this.condition_date = new Date(trailData.conditionDate).toString().slice(0,15);
+    this.condition_time = new Date(trailData.conditionDate).toLocaleDateString([], {hour: '2-digit', minute: '2-digit',}).slice(11);
+    this.conditions = `${trailData.conditionStatus} & ${trailData.conditionDetails}`;
+  }
+  this.stars = trailData.stars;
+  this.star_votes = trailData.starVotes;
+  this.summary = trailData.summary;
+}
 
 // 404 route
 app.get('*', (request,response) => {
