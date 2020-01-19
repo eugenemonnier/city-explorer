@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS weather;
 DROP TABLE IF EXISTS events;
 DROP TABLE IF EXISTS movies;
 DROP TABLE IF EXISTS yelp;
+DROP TABLE IF EXISTS trails;
 
 
   CREATE TABLE locations (
@@ -37,3 +38,10 @@ CREATE TABLE yelp (
     city VARCHAR(255),
     yelp_data JSON
 );
+
+  CREATE TABLE trails (
+    id SERIAL PRIMARY KEY,
+    latitude DECIMAL(12,8),
+    longitude DECIMAL(12,8),
+    trails_data JSON
+);	
