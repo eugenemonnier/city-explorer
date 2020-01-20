@@ -11,7 +11,13 @@ DROP TABLE IF EXISTS trails;
     search_query VARCHAR(255),
     formatted_query VARCHAR(255),
     latitude DECIMAL(12,8),
-    longitude DECIMAL(12,8)
+    longitude DECIMAL(12,8),
+    forecast JSON,
+    weather_url VARCHAR(255),
+    event_data JSON,
+    movie_data JSON,
+    yelp_data JSON,
+    trails_data JSON
 );
 
   CREATE TABLE weather (
