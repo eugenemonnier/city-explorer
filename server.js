@@ -13,9 +13,18 @@ const yelp = require('yelp-fusion');
 // global variables
 const app = express();
 const PORT = process.env.PORT || 3001;
-let location = {};
+let lat = 0;
+let lon = 0;
 // allows server to talk to frontend
 app.use(cors());
+
+// modules
+const Location = require('./constructors');
+const Weather = require('./constructors');
+// const NewEvent = require('./constructors');
+// const Movies = require('./constructors');
+// const Yelp = require('./constructors');
+// const Trails = require('./constructors');
 
 
 
@@ -43,6 +52,8 @@ app.get('/location', (request, response) => {
             .then(locData => {
               let geoDataResults  = locData.body[0];
               location = new Location(city, geoDataResults);
+              lat = location.latitude;
+              lon = location.longitude;
               let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude, location_data) VALUES ($1, $2, $3, $4, $5 );';
               let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude, JSON.stringify(location)];
               client.query(sql, safeValues);
@@ -59,8 +70,10 @@ app.get('/location', (request, response) => {
 
 app.get('/weather', (request, response) => {
   try {
+    console.log('here');
     let key = process.env.DARK_SKY_API_KEY;
-    const weatherDataURL = `https://api.darksky.net/forecast/${key}/${location.latitude},${location.longitude}`;
+    const weatherDataURL = `https://api.darksky.net/forecast/${key}/${lat},${lon}`;
+    console.log(weatherDataURL);
     let firstSql = 'SELECT * FROM locations WHERE weather_url=$1;';
     let safeSqlValue = [weatherDataURL];
     client.query(firstSql,safeSqlValue)
@@ -202,19 +215,21 @@ app.get('/trails', (request, response) => {
 app.get('*', (request,response) => {
   response.status(404).send(`<p style="margin: 20px; font-size: 60px; font-weight: bolder">404 Error</p><p style="margin-left: 20px; font-size: 30px">The requested URL "${request.url}" was not found on this server.</p>`);
 });
+
+
 // constructors
-function Location(city, locationData) {
-  this.search_query = city;
-  this.formatted_query = locationData.display_name;
-  this.latitude = locationData.lat;
-  this.longitude = locationData.lon;
-}
-
-function Weather(dailyData) {
-  this.forecast = dailyData.summary;
-  this.time = new Date(dailyData.time * 1000).toString().slice(0,15);
-}
-
+// function Location(city, locationData) {
+//   this.search_query = city;
+//   this.formatted_query = locationData.display_name;
+//   this.latitude = locationData.lat;
+//   this.longitude = locationData.lon;
+// }
+  
+// function Weather(dailyData) {
+//   this.forecast = dailyData.summary;
+//   this.time = new Date(dailyData.time * 1000).toString().slice(0,15);
+// }
+  
 function NewEvent(thisEventData) {
   this.name = thisEventData.title;
   this.event_date = thisEventData.start_time.slice(0, 10);
@@ -231,7 +246,7 @@ function Movies(movieData) {
   this.image_url = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${movieData.poster_path}`;
   this.overview = movieData.overview;
 }
-
+  
 function Yelp(yelpData) {
   this.name = yelpData.name;
   this.url = yelpData.url;
@@ -239,7 +254,7 @@ function Yelp(yelpData) {
   this.price = yelpData.price;
   this.image_url = yelpData.image_url;
 }
-
+  
 function Trails(trailData) {
   this.name = trailData.name;
   this.trail_url = trailData.url;
