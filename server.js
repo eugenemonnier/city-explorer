@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-/* eslint-disable no-unused-expressions */
 'use strict';
 // required dependencies
 const express = require('express');
@@ -13,9 +11,19 @@ const yelp = require('yelp-fusion');
 // global variables
 const app = express();
 const PORT = process.env.PORT || 3001;
+let lat = 0;
+let lon = 0;
 let location = {};
 // allows server to talk to frontend
 app.use(cors());
+
+// modules
+const Location = require('./constructors');
+// const Weather = require('./constructors');
+// const NewEvent = require('./constructors');
+// const Movies = require('./constructors');
+// const Yelp = require('./constructors');
+// const Trails = require('./constructors');
 
 
 
@@ -43,6 +51,8 @@ app.get('/location', (request, response) => {
             .then(locData => {
               let geoDataResults  = locData.body[0];
               location = new Location(city, geoDataResults);
+              lat = location.latitude;
+              lon = location.longitude;
               let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude, location_data) VALUES ($1, $2, $3, $4, $5 );';
               let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude, JSON.stringify(location)];
               client.query(sql, safeValues);
@@ -59,8 +69,10 @@ app.get('/location', (request, response) => {
 
 app.get('/weather', (request, response) => {
   try {
+    console.log('here');
     let key = process.env.DARK_SKY_API_KEY;
-    const weatherDataURL = `https://api.darksky.net/forecast/${key}/${location.latitude},${location.longitude}`;
+    const weatherDataURL = `https://api.darksky.net/forecast/${key}/${lat},${lon}`;
+    console.log(weatherDataURL);
     let firstSql = 'SELECT * FROM locations WHERE weather_url=$1;';
     let safeSqlValue = [weatherDataURL];
     client.query(firstSql,safeSqlValue)
@@ -116,29 +128,17 @@ app.get('/events', (request, response) => {
 app.get('/movies', (request, response) => {
   try {
     let key = process.env.MOVIE_API_KEY;
-    const movieDataURL = `https://api.themoviedb.org/3/search/movie?api_key=${key}&language=en-US&query=${request.query.search_query}&sort_by=popularity.desc&include_adult=false`;
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&language=en-US&query=${request.query.search_query}&sort_by=popularity.desc&include_adult=false`;
     let firstSql = 'SELECT * FROM locations WHERE movie_url=$1;';
-    let safeSqlValue = [movieDataURL];
-    client.query(firstSql,safeSqlValue)
-      .then (results => {
-        results.rows.length > 0 ? response.status(200).json(results.rows[0].movie_data)
-          : superagent.get(movieDataURL)
-            .then(movieData => {
-              let movieMassData = JSON.parse(movieData.text);
-              let movie =  movieMassData.results.map(thisMovieData => {
-                return new Movies(thisMovieData);
-              });
-              response.status(200).send(movie);
-              let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
-              let safeValues = [request.query.search_query, movieDataURL, JSON.stringify(movie)];
-              client.query(sql, safeValues);
-            });
-      });
+    let safeSqlValue = [url];
+    clientQuery(request, response, firstSql, safeSqlValue, url);
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
   }
 });
+
+
 
 app.get('/yelp', (request, response) => {
   try {
@@ -202,13 +202,41 @@ app.get('/trails', (request, response) => {
 app.get('*', (request,response) => {
   response.status(404).send(`<p style="margin: 20px; font-size: 60px; font-weight: bolder">404 Error</p><p style="margin-left: 20px; font-size: 30px">The requested URL "${request.url}" was not found on this server.</p>`);
 });
+
+//functions
+const clientQuery = ((request, response, firstSql,safeSqlValue,url) => {
+  client.query(firstSql,safeSqlValue)
+    .then (results => {
+      results.rows.length > 0 ? response.status(200).json(results.rows[0].movie_data)
+        : superagentGet(request, response,url);
+    });
+});
+
+const superagentGet = ((request, response,url) => {
+  superagent.get(url)
+    .then(data => {
+      let massData = JSON.parse(data.text);
+      let instance =  massData.results.map(mappedData => {
+        return new Movies(mappedData);
+      });
+      response.status(200).send(instance);
+      let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
+      storeSQL(request, url, instance, sql);
+    });
+});
+
+const storeSQL = ((request, url, instance, sql) => {
+  let safeValues = [request.query.search_query, url, JSON.stringify(instance)];
+  client.query(sql, safeValues);
+});
+
 // constructors
-function Location(city, locationData) {
-  this.search_query = city;
-  this.formatted_query = locationData.display_name;
-  this.latitude = locationData.lat;
-  this.longitude = locationData.lon;
-}
+// function Location(city, locationData) {
+//   this.search_query = city;
+//   this.formatted_query = locationData.display_name;
+//   this.latitude = locationData.lat;
+//   this.longitude = locationData.lon;
+// }
 
 function Weather(dailyData) {
   this.forecast = dailyData.summary;
