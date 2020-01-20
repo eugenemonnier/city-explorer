@@ -131,7 +131,9 @@ app.get('/movies', (request, response) => {
     const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&language=en-US&query=${request.query.search_query}&sort_by=popularity.desc&include_adult=false`;
     let firstSql = 'SELECT * FROM locations WHERE movie_url=$1;';
     let safeSqlValue = [url];
-    clientQuery(request, response, firstSql, safeSqlValue, url);
+    let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
+
+    clientQuery(request, response, firstSql, safeSqlValue, url, Movies, sql);
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
@@ -204,23 +206,22 @@ app.get('*', (request,response) => {
 });
 
 //functions
-const clientQuery = ((request, response, firstSql,safeSqlValue,url) => {
+const clientQuery = ((request, response, firstSql,safeSqlValue,url,constructor,sql) => {
   client.query(firstSql,safeSqlValue)
     .then (results => {
       results.rows.length > 0 ? response.status(200).json(results.rows[0].movie_data)
-        : superagentGet(request, response,url);
+        : superagentGet(request,response,url,constructor,sql);
     });
 });
 
-const superagentGet = ((request, response,url) => {
+const superagentGet = ((request, response,url,constructor,sql) => {
   superagent.get(url)
     .then(data => {
       let massData = JSON.parse(data.text);
       let instance =  massData.results.map(mappedData => {
-        return new Movies(mappedData);
+        return new constructor(mappedData);
       });
       response.status(200).send(instance);
-      let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
       storeSQL(request, url, instance, sql);
     });
 });
