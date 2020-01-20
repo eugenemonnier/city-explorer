@@ -132,7 +132,6 @@ app.get('/movies', (request, response) => {
     let firstSql = 'SELECT * FROM locations WHERE movie_url=$1;';
     let safeSqlValue = [url];
     let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
-
     clientQuery(request, response, firstSql, safeSqlValue, url, Movies, sql);
   }
   catch(error) {
@@ -218,13 +217,20 @@ const superagentGet = ((request, response,url,constructor,sql) => {
   superagent.get(url)
     .then(data => {
       let massData = JSON.parse(data.text);
-      let instance =  massData.results.map(mappedData => {
-        return new constructor(mappedData);
-      });
-      response.status(200).send(instance);
-      storeSQL(request, url, instance, sql);
+      sendResp(response, mapConstruct(massData,constructor));
+      storeSQL(request, url, mapConstruct(massData,constructor), sql);
     });
 });
+
+const mapConstruct = ((massData,constructor) => {
+  let instance = massData.results.map(mappedData => {
+    let instance = new constructor(mappedData);
+    return instance;
+  });
+  return instance;
+});
+
+const sendResp = ((response, instance) => response.status(200).send(instance));
 
 const storeSQL = ((request, url, instance, sql) => {
   let safeValues = [request.query.search_query, url, JSON.stringify(instance)];
