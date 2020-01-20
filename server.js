@@ -17,7 +17,6 @@ let location = {};
 // allows server to talk to frontend
 app.use(cors());
 
-client.on('error', err => console.error(err));
 
 
 // routes
@@ -36,7 +35,7 @@ app.get('/location', (request, response) => {
     client.query(firstSql,safeSqlValue)
       .then (results => {
         if(results.rows.length > 0) {
-          response.send(results.rows[0]);
+          response.status(200).json(results.rows[0].location_data);
           location.latitude = results.rows[0].latitude;
           location.longitude = results.rows[0].longitude;
         } else {
@@ -44,8 +43,8 @@ app.get('/location', (request, response) => {
             .then(locData => {
               let geoDataResults  = locData.body[0];
               location = new Location(city, geoDataResults);
-              let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
-              let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
+              let sql = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude, location_data) VALUES ($1, $2, $3, $4, $5 );';
+              let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude, JSON.stringify(location)];
               client.query(sql, safeValues);
               response.status(200).send(location);
             });
@@ -57,6 +56,7 @@ app.get('/location', (request, response) => {
   }
 });
 
+
 app.get('/weather', (request, response) => {
   try {
     let key = process.env.DARK_SKY_API_KEY;
@@ -65,19 +65,20 @@ app.get('/weather', (request, response) => {
     let safeSqlValue = [weatherDataURL];
     client.query(firstSql,safeSqlValue)
       .then (results => {
-        results.rows.length > 0 ? response.status(200).json(results.rows[0].forecast)
-          : superagent.get(weatherDataURL)
+        if (results.rows.length > 0) {
+          response.status(200).json(results.rows[0].forecast);
+        } else {
+          superagent.get(weatherDataURL)
             .then(weatherData => {
               let localWeather = weatherData.body.daily.data.map(dailyData=> {
                 return new Weather(dailyData);
               });
-              let jsonWeather = JSON.stringify(localWeather);
-              console.log(localWeather);
               let sql = 'UPDATE locations SET forecast = $1, weather_url = $2 WHERE search_query = $3;';
-              let safeValues = [jsonWeather, weatherDataURL, request.query.search_query];
+              let safeValues = [JSON.stringify(localWeather), weatherDataURL, request.query.search_query];
               client.query(sql, safeValues);
               response.status(200).send(localWeather);
             });
+        }
       });
   }
   catch(error) {
@@ -89,8 +90,8 @@ app.get('/events', (request, response) => {
   try {
     let key = process.env.EVENTFUL_API_KEY;
     const eventDataURL = `http://api.eventful.com/json/events/search?location=${request.query.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
-    let firstSql = 'SELECT * FROM events WHERE city=$1;';
-    let safeSqlValue = [request.query.search_query];
+    let firstSql = 'SELECT * FROM locations WHERE event_url=$1;';
+    let safeSqlValue = [eventDataURL];
     client.query(firstSql,safeSqlValue)
       .then (results => {
         results.rows.length > 0 ? response.status(200).json(results.rows[0].event_data)
@@ -100,8 +101,8 @@ app.get('/events', (request, response) => {
               let localEvent = eventMassData.events.event.map(thisEventData => {
                 return new NewEvent(thisEventData);
               });
-              let sql = 'INSERT INTO events (city, event_data) VALUES ($1, $2);';
-              let safeValues = [request.query.search_query, JSON.stringify(localEvent)];
+              let sql = 'UPDATE locations SET event_data = $3, event_url = $2 WHERE search_query = $1;';
+              let safeValues = [request.query.search_query, eventDataURL, JSON.stringify(localEvent)];
               client.query(sql, safeValues);
               response.status(200).send(localEvent);
             });
@@ -116,8 +117,8 @@ app.get('/movies', (request, response) => {
   try {
     let key = process.env.MOVIE_API_KEY;
     const movieDataURL = `https://api.themoviedb.org/3/search/movie?api_key=${key}&language=en-US&query=${request.query.search_query}&sort_by=popularity.desc&include_adult=false`;
-    let firstSql = 'SELECT * FROM movies WHERE city=$1;';
-    let safeSqlValue = [request.query.search_query];
+    let firstSql = 'SELECT * FROM locations WHERE movie_url=$1;';
+    let safeSqlValue = [movieDataURL];
     client.query(firstSql,safeSqlValue)
       .then (results => {
         results.rows.length > 0 ? response.status(200).json(results.rows[0].movie_data)
@@ -128,8 +129,8 @@ app.get('/movies', (request, response) => {
                 return new Movies(thisMovieData);
               });
               response.status(200).send(movie);
-              let sql = 'INSERT INTO movies (city, movie_data) VALUES ($1, $2);';
-              let safeValues = [request.query.search_query, JSON.stringify(movie)];
+              let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
+              let safeValues = [request.query.search_query, movieDataURL, JSON.stringify(movie)];
               client.query(sql, safeValues);
             });
       });
@@ -147,8 +148,8 @@ app.get('/yelp', (request, response) => {
       term: 'restaurant',
       location: request.query.search_query,
     };
-    let firstSql = 'SELECT * FROM yelp WHERE city=$1;';
-    let safeSqlValue = [request.query.search_query];
+    let firstSql = 'SELECT * FROM locations WHERE yelp_search =$1;';
+    let safeSqlValue = [yelpSearch.location];
     client.query(firstSql,safeSqlValue)
       .then (results => {
         results.rows.length > 0 ? response.status(200).json(results.rows[0].yelp_data)
@@ -159,8 +160,8 @@ app.get('/yelp', (request, response) => {
                 return new Yelp(thisYelpData);
               });
               response.status(200).send(yelpReview);
-              let sql = 'INSERT INTO yelp (city, yelp_data) VALUES ($1, $2);';
-              let safeValues = [request.query.search_query, JSON.stringify(yelpReview)];
+              let sql = 'UPDATE locations SET yelp_data = $3, yelp_search = $2 WHERE search_query = $1;';
+              let safeValues = [request.query.search_query, yelpSearch.location, JSON.stringify(yelpReview)];
               client.query(sql, safeValues);
             });
       });
@@ -174,8 +175,8 @@ app.get('/trails', (request, response) => {
   try {
     let key = process.env.TRAIL_API_KEY;
     const trailsDataURL = `https://www.hikingproject.com/data/get-trails?lat=${location.latitude}&lon=${location.longitude}&maxDistance=10&key=${key}`;
-    let firstSql = 'SELECT * FROM trails WHERE latitude=$1 AND longitude =$2;';
-    let safeSqlValue = [location.latitude, location.longitude];
+    let firstSql = 'SELECT * FROM locations WHERE trails_url=$1;';
+    let safeSqlValue = [trailsDataURL];
     client.query(firstSql,safeSqlValue)
       .then (results => {
         results.rows.length > 0 ? response.status(200).json(results.rows[0].trails_data)
@@ -186,8 +187,8 @@ app.get('/trails', (request, response) => {
                 return new Trails(trailData);
               });
               response.status(200).send(trail);
-              let sql = 'INSERT INTO trails (latitude , longitude, trails_data) VALUES ($1, $2, $3);';
-              let safeValues = [location.latitude, location.longitude, JSON.stringify(trail)];
+              let sql = 'UPDATE locations SET trails_data = $3, trails_url = $2 WHERE search_query = $1;';
+              let safeValues = [request.query.search_query, trailsDataURL, JSON.stringify(trail)];
               client.query(sql, safeValues);
             });
       });
@@ -267,7 +268,6 @@ function errorHandler(string,request,response){
 client.connect()
   .then( () => {
     app.listen(PORT, () => {
-      console.log('Server up on', PORT);
     });
   })
   .catch(err => {

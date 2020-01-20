@@ -1,9 +1,4 @@
 DROP TABLE IF EXISTS locations;
-DROP TABLE IF EXISTS weather;
-DROP TABLE IF EXISTS events;
-DROP TABLE IF EXISTS movies;
-DROP TABLE IF EXISTS yelp;
-DROP TABLE IF EXISTS trails;
 
 
   CREATE TABLE locations (
@@ -12,42 +7,15 @@ DROP TABLE IF EXISTS trails;
     formatted_query VARCHAR(255),
     latitude DECIMAL(12,8),
     longitude DECIMAL(12,8),
-    forecast JSON,
     weather_url VARCHAR(255),
+    event_url VARCHAR(255),
+    movie_url VARCHAR(255),
+    yelp_search VARCHAR(255),
+    trails_url VARCHAR(255),
+    location_data JSON,
+    forecast JSON,
     event_data JSON,
     movie_data JSON,
     yelp_data JSON,
     trails_data JSON
 );
-
-  CREATE TABLE weather (
-    id SERIAL PRIMARY KEY,
-    latitude DECIMAL(12,8),
-    longitude DECIMAL(12,8),
-    forecast JSON
-);	
-	
-  CREATE TABLE events (
-    id SERIAL PRIMARY KEY,
-    city VARCHAR(255),
-    event_data JSON
-);	
-
-CREATE TABLE movies (
-    id SERIAL PRIMARY KEY,
-    city VARCHAR(255),
-    movie_data JSON
-);
-
-CREATE TABLE yelp (
-    id SERIAL PRIMARY KEY,
-    city VARCHAR(255),
-    yelp_data JSON
-);
-
-  CREATE TABLE trails (
-    id SERIAL PRIMARY KEY,
-    latitude DECIMAL(12,8),
-    longitude DECIMAL(12,8),
-    trails_data JSON
-);	
