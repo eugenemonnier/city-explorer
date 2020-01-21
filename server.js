@@ -69,10 +69,8 @@ app.get('/location', (request, response) => {
 
 app.get('/weather', (request, response) => {
   try {
-    console.log('here');
     let key = process.env.DARK_SKY_API_KEY;
     const weatherDataURL = `https://api.darksky.net/forecast/${key}/${lat},${lon}`;
-    console.log(weatherDataURL);
     let firstSql = 'SELECT * FROM locations WHERE weather_url=$1;';
     let safeSqlValue = [weatherDataURL];
     client.query(firstSql,safeSqlValue)
@@ -217,16 +215,14 @@ const superagentGet = ((request, response,url,constructor,sql) => {
   superagent.get(url)
     .then(data => {
       let massData = JSON.parse(data.text);
+      // console.log(mapConstruct(massData,constructor));
       sendResp(response, mapConstruct(massData,constructor));
       storeSQL(request, url, mapConstruct(massData,constructor), sql);
     });
 });
 
 const mapConstruct = ((massData,constructor) => {
-  let instance = massData.results.map(mappedData => {
-    let instance = new constructor(mappedData);
-    return instance;
-  });
+  let instance = new constructor(massData);
   return instance;
 });
 
@@ -258,13 +254,14 @@ function NewEvent(thisEventData) {
 }
 
 function Movies(movieData) {
-  this.title = movieData.title;
-  this.released_on = movieData.release_date;
-  this.total_votes = movieData.vote_count;
-  this.average_votes = movieData.vote_average;
-  this.popularity = movieData.popularity;
-  this.image_url = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${movieData.poster_path}`;
-  this.overview = movieData.overview;
+  console.log(movieData.results.title);
+  this.title = movieData.results.title;
+  this.released_on = movieData.results.release_date;
+  this.total_votes = movieData.results.vote_count;
+  this.average_votes = movieData.results.vote_average;
+  this.popularity = movieData.results.popularity;
+  this.image_url = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${movieData.results.poster_path}`;
+  this.overview = movieData.results.overview;
 }
 
 function Yelp(yelpData) {
