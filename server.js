@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+/* eslint-disable no-unused-expressions */
 'use strict';
 // required dependencies
 const express = require('express');
@@ -99,24 +101,12 @@ app.get('/weather', (request, response) => {
 app.get('/events', (request, response) => {
   try {
     let key = process.env.EVENTFUL_API_KEY;
-    const eventDataURL = `http://api.eventful.com/json/events/search?location=${request.query.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
+    const url = `http://api.eventful.com/json/events/search?location=${request.query.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
     let firstSql = 'SELECT * FROM locations WHERE event_url=$1;';
-    let safeSqlValue = [eventDataURL];
-    client.query(firstSql,safeSqlValue)
-      .then (results => {
-        results.rows.length > 0 ? response.status(200).json(results.rows[0].event_data)
-          : superagent.get(eventDataURL)
-            .then(eventData => {
-              let eventMassData = JSON.parse(eventData.text);
-              let localEvent = eventMassData.events.event.map(thisEventData => {
-                return new NewEvent(thisEventData);
-              });
-              let sql = 'UPDATE locations SET event_data = $3, event_url = $2 WHERE search_query = $1;';
-              let safeValues = [request.query.search_query, eventDataURL, JSON.stringify(localEvent)];
-              client.query(sql, safeValues);
-              response.status(200).send(localEvent);
-            });
-      });
+    let safeSqlValue = [url];
+    let sql = 'UPDATE locations SET event_data = $3, event_url = $2 WHERE search_query = $1;';
+    let wildCardFunction = eventMap;
+    clientQuery(request, response, firstSql, safeSqlValue, url, sql, wildCardFunction);
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
@@ -130,7 +120,8 @@ app.get('/movies', (request, response) => {
     let firstSql = 'SELECT * FROM locations WHERE movie_url=$1;';
     let safeSqlValue = [url];
     let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
-    clientQuery(request, response, firstSql, safeSqlValue, url, Movies, sql);
+    let wildCardFunction = movieMap;
+    clientQuery(request, response, firstSql, safeSqlValue, url, sql, wildCardFunction);
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
@@ -203,28 +194,28 @@ app.get('*', (request,response) => {
 });
 
 //functions
-const clientQuery = ((request, response, firstSql,safeSqlValue,url,constructor,sql) => {
+const clientQuery = ((request, response, firstSql,safeSqlValue,url,sql, wildCardFunction) => {
   client.query(firstSql,safeSqlValue)
     .then (results => {
+      // eslint-disable-next-line no-unused-expressions
       results.rows.length > 0 ? response.status(200).json(results.rows[0].movie_data)
-        : superagentGet(request,response,url,constructor,sql);
+        : superagentGet(request,response,url,sql, wildCardFunction);
     });
 });
 
-const superagentGet = ((request, response,url,constructor,sql) => {
+const superagentGet = ((request, response,url,sql,wildCardFunction) => {
   superagent.get(url)
     .then(data => {
       let massData = JSON.parse(data.text);
-      // console.log(mapConstruct(massData,constructor));
-      sendResp(response, mapConstruct(massData,constructor));
-      storeSQL(request, url, mapConstruct(massData,constructor), sql);
+      let instance = wildCardFunction(massData);
+      sendResp(response, instance);
+      storeSQL(request, url, instance, sql);
     });
 });
 
-const mapConstruct = ((massData,constructor) => {
-  let instance = new constructor(massData);
-  return instance;
-});
+
+const movieMap = (massData => massData.results.map(data => new Movies(data)));
+const eventMap = (massData => massData.events.event.map(data => new NewEvent(data)));
 
 const sendResp = ((response, instance) => response.status(200).send(instance));
 
@@ -254,14 +245,13 @@ function NewEvent(thisEventData) {
 }
 
 function Movies(movieData) {
-  console.log(movieData.results.title);
-  this.title = movieData.results.title;
-  this.released_on = movieData.results.release_date;
-  this.total_votes = movieData.results.vote_count;
-  this.average_votes = movieData.results.vote_average;
-  this.popularity = movieData.results.popularity;
-  this.image_url = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${movieData.results.poster_path}`;
-  this.overview = movieData.results.overview;
+  this.title = movieData.title;
+  this.released_on = movieData.release_date;
+  this.total_votes = movieData.vote_count;
+  this.average_votes = movieData.vote_average;
+  this.popularity = movieData.popularity;
+  this.image_url = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${movieData.poster_path}`;
+  this.overview = movieData.overview;
 }
 
 function Yelp(yelpData) {
@@ -300,6 +290,7 @@ function errorHandler(string,request,response){
 client.connect()
   .then( () => {
     app.listen(PORT, () => {
+      console.log(`Listening on port: ${PORT}`);
     });
   })
   .catch(err => {
