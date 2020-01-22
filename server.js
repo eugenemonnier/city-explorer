@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+/* eslint-disable no-unused-expressions */
 'use strict';
 // required dependencies
 const express = require('express');
@@ -69,10 +71,8 @@ app.get('/location', (request, response) => {
 
 app.get('/weather', (request, response) => {
   try {
-    console.log('here');
     let key = process.env.DARK_SKY_API_KEY;
     const weatherDataURL = `https://api.darksky.net/forecast/${key}/${lat},${lon}`;
-    console.log(weatherDataURL);
     let firstSql = 'SELECT * FROM locations WHERE weather_url=$1;';
     let safeSqlValue = [weatherDataURL];
     client.query(firstSql,safeSqlValue)
@@ -101,24 +101,12 @@ app.get('/weather', (request, response) => {
 app.get('/events', (request, response) => {
   try {
     let key = process.env.EVENTFUL_API_KEY;
-    const eventDataURL = `http://api.eventful.com/json/events/search?location=${request.query.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
+    const url = `http://api.eventful.com/json/events/search?location=${request.query.search_query}&date=Today&sort_order=date&sort_direction=descending&app_key=${key}`;
     let firstSql = 'SELECT * FROM locations WHERE event_url=$1;';
-    let safeSqlValue = [eventDataURL];
-    client.query(firstSql,safeSqlValue)
-      .then (results => {
-        results.rows.length > 0 ? response.status(200).json(results.rows[0].event_data)
-          : superagent.get(eventDataURL)
-            .then(eventData => {
-              let eventMassData = JSON.parse(eventData.text);
-              let localEvent = eventMassData.events.event.map(thisEventData => {
-                return new NewEvent(thisEventData);
-              });
-              let sql = 'UPDATE locations SET event_data = $3, event_url = $2 WHERE search_query = $1;';
-              let safeValues = [request.query.search_query, eventDataURL, JSON.stringify(localEvent)];
-              client.query(sql, safeValues);
-              response.status(200).send(localEvent);
-            });
-      });
+    let safeSqlValue = [url];
+    let sql = 'UPDATE locations SET event_data = $3, event_url = $2 WHERE search_query = $1;';
+    let wildCardFunction = eventMap;
+    clientQuery(request, response, firstSql, safeSqlValue, url, sql, wildCardFunction);
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
@@ -131,7 +119,9 @@ app.get('/movies', (request, response) => {
     const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&language=en-US&query=${request.query.search_query}&sort_by=popularity.desc&include_adult=false`;
     let firstSql = 'SELECT * FROM locations WHERE movie_url=$1;';
     let safeSqlValue = [url];
-    clientQuery(request, response, firstSql, safeSqlValue, url);
+    let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
+    let wildCardFunction = movieMap;
+    clientQuery(request, response, firstSql, safeSqlValue, url, sql, wildCardFunction);
   }
   catch(error) {
     errorHandler('Robert messed up: ', error, request, response);
@@ -204,26 +194,30 @@ app.get('*', (request,response) => {
 });
 
 //functions
-const clientQuery = ((request, response, firstSql,safeSqlValue,url) => {
+const clientQuery = ((request, response, firstSql,safeSqlValue,url,sql, wildCardFunction) => {
   client.query(firstSql,safeSqlValue)
     .then (results => {
+      // eslint-disable-next-line no-unused-expressions
       results.rows.length > 0 ? response.status(200).json(results.rows[0].movie_data)
-        : superagentGet(request, response,url);
+        : superagentGet(request,response,url,sql, wildCardFunction);
     });
 });
 
-const superagentGet = ((request, response,url) => {
+const superagentGet = ((request, response,url,sql,wildCardFunction) => {
   superagent.get(url)
     .then(data => {
       let massData = JSON.parse(data.text);
-      let instance =  massData.results.map(mappedData => {
-        return new Movies(mappedData);
-      });
-      response.status(200).send(instance);
-      let sql = 'UPDATE locations SET movie_data = $3, movie_url = $2 WHERE search_query = $1;';
+      let instance = wildCardFunction(massData);
+      sendResp(response, instance);
       storeSQL(request, url, instance, sql);
     });
 });
+
+
+const movieMap = (massData => massData.results.map(data => new Movies(data)));
+const eventMap = (massData => massData.events.event.map(data => new NewEvent(data)));
+
+const sendResp = ((response, instance) => response.status(200).send(instance));
 
 const storeSQL = ((request, url, instance, sql) => {
   let safeValues = [request.query.search_query, url, JSON.stringify(instance)];
@@ -296,6 +290,7 @@ function errorHandler(string,request,response){
 client.connect()
   .then( () => {
     app.listen(PORT, () => {
+      console.log(`Listening on port: ${PORT}`);
     });
   })
   .catch(err => {
